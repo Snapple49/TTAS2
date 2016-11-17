@@ -31,3 +31,24 @@ class GetVariableTestCase(BaseTestCase):
 	def test_pc_sfu(self):
 		variable = i.get_variable('PC_SFU')
 		return self.assertEqual(variable, "120 PC_SFU:0\n")
+
+class TransactionsTestCase(OpenedAccountTestCase):
+	
+	def test_valid_mthd(self):
+		i.close_acc()
+		response = i.trans('TM_BANK')
+		return self.assertEqual(response, "240 0,00 Transaction succeeded\n")
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
