@@ -2,7 +2,8 @@
 import unittest
 import interface as i
 import test_cases 
-from test_cases import GetVariableTestCase, TransactionsTestCase
+<<<<<<< HEAD
+from test_cases import GetVariableTestCase, TransactionsTestCase, AccountTestCase
 
 if __name__ == '__main__':
 	unittest.main()

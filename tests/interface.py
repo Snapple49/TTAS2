@@ -41,6 +41,9 @@ def close_acc():
 	tn.write('close\n')
 	return flush_line()
 
+def acc_state():
+	return get_variable('CS_ACCNT')
+
 def quit():
 	tn.write('quit\n')
 
