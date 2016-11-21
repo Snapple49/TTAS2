@@ -33,8 +33,12 @@ def art_reg_empty():
 	return flush_lines(2)
 	
 
-def trans(method, amount=""):
-	tn.write('trans %s:%s\n' % (method, amount))
+def trans(method, amount=None, cents=None):
+	if amount:
+		cents =  cents or 0
+		tn.write('trans %s:%s,%s\n' % (method, amount, cents))
+	else:
+		tn.write('trans %s\n' % (method))
 	return flush_lines()
 
 def idle():

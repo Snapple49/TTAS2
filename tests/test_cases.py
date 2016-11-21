@@ -103,13 +103,6 @@ class AccountTestCase(BaseTestCase):
 		return self.assertEqual(expected, response)
 
 
-class TransactionsTestCase(OpenedAccountTestCase):
-	
-	def test_valid_mthd(self):
-		i.close_acc()
-		response = i.trans('TM_BANK')
-		return self.assertEqual(response, "240 0,00 Transaction succeeded\n")
-
 class ArtRegTestCase(OpenedAccountTestCase):
 
 	# Test 16
@@ -143,4 +136,69 @@ class ArtRegTestCase(OpenedAccountTestCase):
 		return (self.assertEqual(expected, response))
 
 
+class TransactionsTestCase(OpenedAccountTestCase):
+	
+	def tearDown(self):
+		i.idle()
+	
+	# Test 21
+	def test_valid_mthd(self):
+		i.close_acc()
+		response = i.trans('TM_BANK')
+		return self.assertEqual(response, "240 0,00 Transaction succeeded\n")
+	
+	# Test 22
+	def test_invalid_method(self):
+		i.close_acc()
+		response = i.trans('TM_BANKasd123')
+		return self.assertEqual(response, "540 No such Transaction method\n")
+		
+	# Test 23
+	def test_invalid_method2(self):
+		i.close_acc()
+		response = i.trans('TM_CASHasd123')
+		return self.assertEqual(response, "540 No Such Transaction method\n")
+		
+	# Test 24
+	def test_valid_negamnt(self):
+		i.close_acc()
+		response = i.trans('TM_BANK', -10)
+		return self.assertEqual(response, "542 FI AMOUNT Transaction failed\n")
+	
+	# Test 25
+	def test_valid_neg_699(self):
+		i.art_reg(59922827, 1)
+		i.close_acc()
+		response = i.trans('TM_BANK', -10)
+		return self.assertEqual(response, "240 16,99 Transaction succeeded\n")
+	
+	# Test 26
+	def test_valid_above(self):
+		i.art_reg(59922827, 1)
+		i.close_acc()
+		response = i.trans('TM_BANK', 20)
+		return self.assertEqual(response, "240 -13,01 Transaction succeeded\n")
+		
+	# Test 27
+	def test_valid_below(self):
+		i.art_reg(59922827, 1)
+		i.close_acc()
+		response = i.trans('TM_BANK', 20)
+		return self.assertEqual(response, "240 3,99 Transaction succeeded\n")
 
+	# Test 28
+	def test_valid_exact(self):
+		i.art_reg(59922827, 1)
+		i.close_acc()
+		response = i.trans('TM_BANK', 6, 99)
+		return self.assertEqual(response, "240 0,00 Transaction succeeded\n")
+
+	# Test 29
+	def test_wierd_stuff(self):
+		i.art_reg(59922827, 0)
+		i.art_reg_empty()
+		response = i.close_acc()
+		return self.assertEqual(response, "240 0,00 Transaction succeeded\n")
+
+		
+		
