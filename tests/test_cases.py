@@ -167,7 +167,7 @@ class ArtRegTestCase(OpenedAccountTestCase):
 		return (self.assertEqual(expected, response))
 
 	# Test 20
-	def test_float_amont(self):
+	def test_amont_zero(self):
 		expected = "501 Syntax error\n"
 		response = i.art_reg(59922827, 0)
 		return (self.assertEqual(expected, response))
