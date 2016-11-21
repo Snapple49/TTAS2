@@ -102,6 +102,43 @@ class AccountTestCase(BaseTestCase):
 		response = i.idle()
 		return self.assertEqual(expected, response)
 
+class ArtIdTestCase(BaseTestCase):
+
+	# Test 10
+	def test_valid_1(self):
+		expected = '''213 desc="Magnezium pezsgotabl" price=4,69\n'''
+		response = i.art_id(20013226)
+		return (self.assertEqual(expected, response))
+
+	# Test 11
+	def test_valid_2(self):
+		expected = '''213 desc="Multifilter kek" price=6,99 age\n'''
+		response = i.art_id(59922827)
+		return (self.assertEqual(expected, response))
+
+	# Test 12
+	def test_invalid(self):
+		expected = "511 No such article\n"
+		response = i.art_id(2)
+		return (self.assertEqual(expected, response))
+
+	# Test 13
+	def test_negative(self):
+		expected = "511 No such article\n"
+		response = i.art_id(-1)
+		return (self.assertEqual(expected, response))
+
+	# Test 14
+	def test_char(self):
+		expected = "511 No such article\n"
+		response = i.art_id('a')
+		return (self.assertEqual(expected, response))
+
+	# Test 15
+	def test_empty(self):
+		expected = "501 Syntax error\n"
+		response = i.art_id('')
+		return (self.assertEqual(expected, response))
 
 class ArtRegTestCase(OpenedAccountTestCase):
 
