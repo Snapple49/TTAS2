@@ -34,7 +34,7 @@ def art_reg_empty():
 	
 
 def trans(method, amount=""):
-	tn.write('trans %s %s\n' % (method, amount))
+	tn.write('trans %s:%s\n' % (method, amount))
 	return flush_lines()
 
 def idle():
