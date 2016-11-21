@@ -26,6 +26,12 @@ def art_reg(barcode, amount=1):
 	tn.write('artreg %s:%s\n' % (barcode, amount))
 	# ARTEREG returns 2 lines so we need to flush 2 lines
 	return flush_lines(2)
+	
+def art_reg_empty():
+	tn.write('artreg\n')
+	# ARTEREG returns 2 lines so we need to flush 2 lines
+	return flush_lines(2)
+	
 
 def trans(method, amount=""):
 	tn.write('trans %s %s\n' % (method, amount))
