@@ -3,7 +3,7 @@ import telnetlib
 
 host = "sid.cs.ru.nl"
 port = 25999
-debug = True
+debug = False
 tn = telnetlib.Telnet(host, port)
 
 def run_command(command, lines=1):

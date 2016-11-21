@@ -138,8 +138,14 @@ class ArtRegTestCase(OpenedAccountTestCase):
 
 class TransactionsTestCase(OpenedAccountTestCase):
 	
+	def setup(self):
+		super(TransactionsTestCase, self).setup()
+		i.open_acc()
+
 	def tearDown(self):
+		i.trans('TM_CASH')
 		i.idle()
+		i.sign_off()
 	
 	# Test 21
 	def test_valid_mthd(self):
@@ -169,7 +175,7 @@ class TransactionsTestCase(OpenedAccountTestCase):
 	def test_valid_neg_699(self):
 		i.art_reg(59922827, 1)
 		i.close_acc()
-		response = i.trans('TM_BANK', -10)
+		response = i.trans('TM_CASH', -10)
 		return self.assertEqual(response, "240 16,99 Transaction succeeded\n")
 	
 	# Test 26
@@ -183,7 +189,7 @@ class TransactionsTestCase(OpenedAccountTestCase):
 	def test_valid_below(self):
 		i.art_reg(59922827, 1)
 		i.close_acc()
-		response = i.trans('TM_BANK', 20)
+		response = i.trans('TM_BANK', 3)
 		return self.assertEqual(response, "240 3,99 Transaction succeeded\n")
 
 	# Test 28
