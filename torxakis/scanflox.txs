@@ -7,17 +7,74 @@ See license.txt
 -- ----------------------------------------------------- --
 
 CHANDEF  Chans  
-	::=  
-		Out :: String;
+    ::=  
+        Out :: String;
         In  :: String
 ENDDEF
 
 -- ----------------------------------------------------- --
 
-PROCDEF signOn [In :: String; Out :: String] ()
-	::=
-		Out ? x >-> In ! " signon 8:01\n" >-> Out ! "251 Signed On"
+PROCDEF open [In :: String; Out :: String] ()
+    ::=
+        In ! "open\n" >-> Out ? x >-> close[In, Out]()
 ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF close [In :: String; Out :: String] ()
+    ::=
+        In ! "close\n" >-> Out ? x >-> trans[In, Out]()
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF trans [In :: String; Out :: String] ()
+    ::=
+        In ! "trans tm_cash\n" >-> Out ? x >-> idle[In, Out]()
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF idle [In :: String; Out :: String] ()
+    ::=
+        In ! "idle\n" >-> Out ? x >-> yo[In, Out]()
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF yo [In :: String; Out :: String] ()
+    ::=
+        get[In, Out]() 
+        ##
+        open[In, Out]()
+        
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF get [In :: String; Out :: String] ()
+    ::=
+        In ! "get cs_accnt\n" >-> Out ? x >-> yo[In, Out]()
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF signOn [In :: String; Out :: String] ()
+    ::=
+        Out ? x >-> In ! "signon 8:01\n" >-> Out ! "251 Signed On" >-> open[In, Out]()
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+STAUTDEF sflow [ In :: String; Out :: String ] ( )
+    ::= 
+        STATE not_signed, idle_s
+        VAR sum :: Int
+
+        INIT not_signed {}
+        TRANS not_signed -> In ! "signon 8:01\n" -> idle_s
+                
+ENDDEF  
 
 -- ----------------------------------------------------- --
 
@@ -27,7 +84,7 @@ MODELDEF  Mod
      CHAN OUT   Out
 
      BEHAVIOUR  
-			   signOn[In, Out]() 
+              signOn[In, Out]()
 ENDDEF
 
 -- ----------------------------------------------------- --
