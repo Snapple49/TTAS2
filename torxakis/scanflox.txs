@@ -1,0 +1,47 @@
+{-
+TorXakis - Model Based Testing
+Copyright (c) 2015-2016 TNO and Radboud University
+See license.txt
+-}
+
+-- ----------------------------------------------------- --
+
+CHANDEF  Chans  
+	::=  
+		Out :: String;
+        In  :: String
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF signOn [In :: String; Out :: String] ()
+	::=
+		Out ? x >-> In ! " signon 8:01\n" >-> Out ! "251 Signed On"
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+MODELDEF  Mod
+ ::=
+     CHAN IN    In
+     CHAN OUT   Out
+
+     BEHAVIOUR  
+			   signOn[In, Out]() 
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+CNECTDEF  Sut
+ ::=
+     CLIENTSOCK
+
+     CHAN OUT  In          HOST "sid.cs.ru.nl"  PORT 25999
+     ENCODE    In ? cmd      ->  !  cmd
+
+     CHAN IN   Out          HOST "sid.cs.ru.nl"  PORT 25999
+     DECODE   Out ! s   <-   ? s
+ENDDEF
+
+-- ----------------------------------------------------- --
+
