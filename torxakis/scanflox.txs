@@ -14,6 +14,26 @@ ENDDEF
 
 -- ----------------------------------------------------- --
 
+TYPEDEF  Cmd  
+    ::=  
+        Signon |
+		Signoff |
+		Open |
+		Artreg {artid :: Int; artamount :: Int} |
+		Close |
+		Trans {method :: String} |
+		Idle
+ENDDEF
+
+-- ----------------------------------------------------- --
+{-
+TYPEDEF  Resp  
+    ::=  
+        success {code :: String} |
+		failure {code :: String}		
+ENDDEF
+
+-- ----
 PROCDEF open [In :: String; Out :: String] ()
     ::=
         In ! "open\n" >-> Out ? x >-> close[In, Out]()
@@ -63,16 +83,50 @@ PROCDEF signOn [In :: String; Out :: String] ()
     ::=
         Out ? x >-> In ! "signon 8:01\n" >-> Out ! "251 Signed On" >-> open[In, Out]()
 ENDDEF
+-}
+-- ----------------------------------------------------- --
+
+FUNCDEF cmdToString (c :: Cmd) :: String
+	::=
+		IF isSignon(c) THEN "signon 8:01\n" ELSE
+			IF isSignoff(c) THEN "signoff\n" ELSE
+				IF isOpen(c) THEN "open\n" ELSE
+					IF isArtreg(c) THEN "artreg " ++ toString(artid(c)) ++ ":" ++ toString(artamount(c)) ++ "\n" ELSE
+						IF isClose(c) THEN "close\n" ELSE
+							IF isTrans(c) THEN "trans " ++ method(c) ++ "\n" ELSE
+								IF isIdle(c) THEN "idle\n" ELSE ""
+							FI
+						FI
+					FI
+				FI
+			FI
+		FI	
+	FI
+ENDDEF
 
 -- ----------------------------------------------------- --
 
-STAUTDEF sflow [ In :: String; Out :: String ] ( )
+STAUTDEF scanflowserver [ In :: String; Out :: String ] ( )
     ::= 
-        STATE not_signed, idle_s
-        VAR sum :: Int
+        STATE GREETING, NOT_SIGNED, SIGNING_IN, AS_IDLE, OPENING, AS_OPEN, REGISTERING, CLOSING, AS_CLOSED, SIGNING_OUT, AS_TRANSING, AS_ENDING, IDLING
+        
 
-        INIT not_signed {}
-        TRANS not_signed -> In ! "signon 8:01\n" -> idle_s
+        INIT GREETING {}
+		
+        TRANS 	GREETING -> Out ? x -> NOT_SIGNED
+				NOT_SIGNED -> In ! cmdToString(Signon) -> SIGNING_IN
+				SIGNING_IN -> Out ? x -> AS_IDLE
+				AS_IDLE -> In ! cmdToString(Open) -> OPENING
+				OPENING -> Out ? x -> AS_OPEN
+				AS_OPEN -> In ! cmdToString(Artreg(59922827, 1)) -> REGISTERING
+				REGISTERING -> Out ? x -> AS_OPEN
+				AS_OPEN -> In ! cmdToString(Close) -> CLOSING
+				CLOSING -> Out ? x -> AS_CLOSED
+				
+				
+				
+				--SIGNING_IN -> Out ? Success :: Resp -> AS_IDLE
+				
                 
 ENDDEF  
 
@@ -84,7 +138,7 @@ MODELDEF  Mod
      CHAN OUT   Out
 
      BEHAVIOUR  
-              signOn[In, Out]()
+              scanflowserver [In, Out] ()
 ENDDEF
 
 -- ----------------------------------------------------- --
