@@ -8,7 +8,7 @@ See license.txt
 
 CHANDEF  Chans  
     ::=  
-        Out :: String;
+        Out :: Response;
         In  :: Cmd
 ENDDEF
 
@@ -16,16 +16,66 @@ ENDDEF
 
 TYPEDEF  Cmd  
     ::=  
-        Signon |
-		Signoff |
+        SignOn 		{sfu :: Int; password :: String}		|
+		SignOff |
 		Open |
-		Artreg {artid :: Article; artamount :: Int} |
+		Artreg {artid :: Article; artAmount :: Int} |
 		Close |
 		Trans {method :: String} |
 		Idle
 ENDDEF
 
 -- ----------------------------------------------------- --
+
+TYPEDEF  Response  
+    ::=  
+	
+		-- Ok
+		ResumedOperation				|
+		CashRegisterRestored			|
+		CRVariable						|
+		ArtDescription1					|
+		AccountBalance					|
+		ArtDescription2					|
+		Weight							|
+		ServiceReady					|
+		ServiceTerminating				|
+		AccountClosed					|
+		AccountOpened					|
+		ArtRegistered					|
+		AccountIdled					|
+		TransactionSucceeded			|
+		SignedOff						|
+		SignedOn						|
+		DataPrinted						|
+		HTLMText						|
+		
+		-- Again
+		SigningRejected					|
+		
+		-- Fail
+        UnknownCommand 					|
+		SyntaxError						|
+		CommandFailed					|
+		ErrorState						|
+		WeighingNotAvailable			|
+		NoSuchVariable					|	
+		NoSuchArticle					|
+		NoStableWeight					|
+		NoSuchAccount					|
+		InValidAccountState				|
+		NoSuchTransactionMethod			|
+		BusyTransacting					|
+		TransactionFailed  				|
+		NotSignedOn						|
+		AuthenticationFailed			|
+		CRPrintingInactive				|
+		SFUPrintingInactive				|
+		Others								
+ENDDEF
+
+-- ----------------------------------------------------- --
+
 TYPEDEF  Article 
 	::=
 		Valid1    |
@@ -34,11 +84,19 @@ TYPEDEF  Article
 		Invalid1 |
 		Invalid2 
 ENDDEF
+
 -- ----------------------------------------------------- --
 
-FUNCDEF isValid (a :: Article) :: Bool
+FUNCDEF isValidArt (a :: Article) :: Bool
 	::=
-		isValid1(a) -- \/ isValid2(a) \/ isValid3(a)
+		isValid1(a)  \/ isValid2(a) \/ isValid3(a)
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+FUNCDEF isValidSignOn (c :: Cmd) :: Bool
+	::=
+		isSignOn(c) /\ (sfu(c) == 8) /\ (password(c) == "01")
 ENDDEF
 
 -- ----------------------------------------------------- --
@@ -46,7 +104,7 @@ FUNCDEF getArtID (a :: Article) :: String
 	::=
 		IF isValid1(a) THEN "59922827" ELSE
 			IF isValid2(a) THEN "20013226"  ELSE	
-				IF isValid3(a) THEN "59922827" ELSE
+				IF isValid3(a) THEN "5998386301215" ELSE
 					IF isInvalid1(a) THEN "22"  ELSE "-1"
 					FI
 				FI
@@ -58,10 +116,10 @@ ENDDEF
 
 FUNCDEF cmdToString (c :: Cmd) :: String
 	::=
-		IF isSignon(c) THEN "signon 8:01\n" ELSE
-			IF isSignoff(c) THEN "signoff\n" ELSE
+		IF isSignOn(c) THEN "signon " ++ toString(sfu(c)) ++ ":"  ++ password(c) ++ "\n" ELSE
+			IF isSignOff(c) THEN "signoff\n" ELSE
 				IF isOpen(c) THEN "open\n" ELSE
-					IF isArtreg(c) THEN "artreg " ++ getArtID(artid(c)) ++ ":" ++ toString(artamount(c)) ++ "\n" ELSE
+					IF isArtreg(c) THEN "artreg " ++ getArtID(artid(c)) ++ ":" ++ toString(artAmount(c)) ++ "\n" ELSE
 						IF isClose(c) THEN "close\n" ELSE
 							IF isTrans(c) THEN "trans " ++ method(c) ++ "\n" ELSE
 								IF isIdle(c) THEN "idle\n" ELSE ""
@@ -76,21 +134,62 @@ ENDDEF
 
 -- ----------------------------------------------------- --
 
-STAUTDEF check1000 [ Add :: Int; Sum :: Int; Success ] ( start_value :: Int )
-::= 
-		STATE state0, state1
-		VAR sum :: Int
-			INIT state0 { sum := start_value }
-			TRANS state0 -> Add ? x [[ x >= 0 ]] { sum := sum + x } -> state1 
-			state1 -> Sum ! sum [[ sum <= 1000 ]] { } -> state0 
-			state1 -> Success [[ sum >= 1000 ]] { sum := start_value } -> state0
-ENDDEF
+FUNCDEF stringToResponse(s :: String) :: Response
+	::=
+		-- Ok
+		IF strinre (s, REGEX('201 .*')) THEN  ResumedOperation 					ELSE
+		IF strinre (s, REGEX('202 .*')) THEN  CashRegisterRestored 				ELSE
+		IF strinre (s, REGEX('210 .*')) THEN  CRVariable 						ELSE
+		IF strinre (s, REGEX('211 .*')) THEN  ArtDescription1 					ELSE
+		IF strinre (s, REGEX('212 .*')) THEN  AccountBalance 					ELSE
+		IF strinre (s, REGEX('213 .*')) THEN  ArtDescription2 					ELSE
+		IF strinre (s, REGEX('214 .*')) THEN  Weight 							ELSE
+		IF strinre (s, REGEX('220 .*')) THEN  ServiceReady 						ELSE
+		IF strinre (s, REGEX('221 .*')) THEN  ServiceTerminating 				ELSE
+		IF strinre (s, REGEX('230 .*')) THEN  AccountClosed 					ELSE
+		IF strinre (s, REGEX('231 .*')) THEN  AccountOpened 					ELSE
+		IF strinre (s, REGEX('232 .*')) THEN  ArtRegistered 					ELSE
+		IF strinre (s, REGEX('233 .*')) THEN  AccountIdled 						ELSE
+		IF strinre (s, REGEX('240 .*')) THEN  TransactionSucceeded 				ELSE
+		IF strinre (s, REGEX('250 .*')) THEN  SignedOff 						ELSE
+		IF strinre (s, REGEX('251 .*')) THEN  SignedOn 							ELSE
+		IF strinre (s, REGEX('260 .*')) THEN  DataPrinted 						ELSE
+		IF strinre (s, REGEX('261 .*')) THEN  HTLMText 							ELSE
+		
+		-- Again
+		IF strinre (s, REGEX('450 .*')) THEN  SigningRejected 					ELSE
 
-STAUTDEF scanflowserver [ In :: Cmd; Out :: String ] ( )
+		-- Fail
+		IF strinre (s, REGEX('500 .*')) THEN  UnknownCommand					ELSE
+		IF strinre (s, REGEX('501 .*')) THEN  SyntaxError 						ELSE
+		IF strinre (s, REGEX('502 .*')) THEN  CommandFailed 					ELSE
+		IF strinre (s, REGEX('503 .*')) THEN  ErrorState						ELSE
+		IF strinre (s, REGEX('504 .*')) THEN  WeighingNotAvailable 				ELSE
+		IF strinre (s, REGEX('510 .*')) THEN  NoSuchVariable					ELSE
+		IF strinre (s, REGEX('511 .*')) THEN  NoSuchArticle 					ELSE
+		IF strinre (s, REGEX('512 .*')) THEN  NoStableWeight					ELSE
+		IF strinre (s, REGEX('530 .*')) THEN  NoSuchAccount						ELSE
+		IF strinre (s, REGEX('531 .*')) THEN  InValidAccountState				ELSE
+		IF strinre (s, REGEX('540 .*')) THEN  NoSuchTransactionMethod			ELSE
+		IF strinre (s, REGEX('541 .*')) THEN  BusyTransacting 					ELSE
+		IF strinre (s, REGEX('542 .*')) THEN  TransactionFailed 				ELSE
+		IF strinre (s, REGEX('550 .*')) THEN  NotSignedOn 						ELSE
+		IF strinre (s, REGEX('551 .*')) THEN  AuthenticationFailed				ELSE
+		IF strinre (s, REGEX('560 .*')) THEN  CRPrintingInactive 				ELSE
+		IF strinre (s, REGEX('561 .*')) THEN  SFUPrintingInactive 				ELSE
+		Others 
+		FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI FI
+		
+ENDDEF
+-- ----------------------------------------------------- --
+
+STAUTDEF scanflowserver [ In :: Cmd; Out :: Response ] ( )
     ::= 
         STATE GREETING, 
 				  NOT_SIGNED, 
+				  FAILING_SIGNON,
 				  SIGNING_IN, 
+				  SIGNING_OFF,
 				  AS_IDLE, 
 				  OPENING, 
 				  AS_OPEN, 
@@ -106,22 +205,26 @@ STAUTDEF scanflowserver [ In :: Cmd; Out :: String ] ( )
 
         INIT GREETING {}
 		
-        TRANS 	GREETING -> Out ? x -> NOT_SIGNED
-				NOT_SIGNED -> In ! Signon -> SIGNING_IN
-				SIGNING_IN -> Out ? x -> AS_IDLE
-				AS_IDLE -> In ! Open -> OPENING
-				OPENING -> Out ? x -> AS_OPEN
-				AS_OPEN -> In ? cmd [[isArtreg(cmd), isValid(artid(cmd)) , artamount(cmd) > 0]]-> REGISTERING
-				REGISTERING -> Out ? x -> TOTALING
-				TOTALING -> Out ? x -> AS_OPEN
-				AS_OPEN -> In ! Close -> CLOSING
-				CLOSING -> Out ? x -> AS_CLOSED
-				AS_CLOSED -> In ! Trans("tm_cash") -> AS_TRANSING
-				AS_TRANSING -> Out ? x -> AS_ENDING
-				AS_ENDING -> In ! Idle -> IDLING
-				IDLING -> Out ? x -> AS_IDLE
-				
-				
+        TRANS 	GREETING 		-> Out ? x 																					-> NOT_SIGNED
+				NOT_SIGNED 		-> In ? cmd [[isSignOn(cmd), isValidSignOn(cmd)]] 											-> SIGNING_IN
+				NOT_SIGNED 		-> In ? cmd [[isSignOn(cmd), not(isValidSignOn(cmd)), sfu(cmd) >= 0]] 						-> FAILING_SIGNON
+				FAILING_SIGNON 	-> Out ! AuthenticationFailed 																-> NOT_SIGNED
+				SIGNING_IN 			-> Out ! SignedOn 																		-> AS_IDLE
+				AS_IDLE 				-> In ! Open 																		-> OPENING
+				AS_IDLE 				-> In ! SignOff 																	-> SIGNING_OFF
+				OPENING 				-> Out ! AccountOpened																-> AS_OPEN
+				AS_OPEN 				-> In ? cmd [[isArtreg(cmd), isValidArt(artid(cmd)) , artAmount(cmd) > 0]] 			-> REGISTERING
+				AS_OPEN 				-> In ? cmd [[isArtreg(cmd), not(isValidArt(artid(cmd))), artAmount(cmd) > 0]] 		-> REGISTERING
+				REGISTERING 		-> Out ! NoSuchArticle 																	-> AS_OPEN
+				REGISTERING 		-> Out ! AccountBalance 																-> TOTALING
+				TOTALING 			-> Out ! ArtRegistered 																	-> AS_OPEN
+				AS_OPEN 				-> In ! Close 																		-> CLOSING
+				CLOSING 				-> Out ! AccountClosed 																-> AS_CLOSED
+				AS_CLOSED 			-> In ! Trans("tm_cash") 																-> AS_TRANSING
+				AS_TRANSING 		-> Out ! TransactionSucceeded 															-> AS_ENDING
+				AS_ENDING 			-> In ! Idle 																			-> IDLING
+				IDLING 				-> Out ! AccountIdled 																	-> AS_IDLE
+				SIGNING_OFF 		-> Out ! SignedOff 																		-> NOT_SIGNED
 
 ENDDEF  
 
@@ -146,7 +249,7 @@ CNECTDEF  Sut
      ENCODE    In ? cmd      ->  !  cmdToString(cmd)
 
      CHAN IN   Out          HOST "sid.cs.ru.nl"  PORT 25999
-     DECODE   Out ! s   <-   ? s
+     DECODE   Out ! stringToResponse(s)   <-   ? s
 ENDDEF
 
 -- ----------------------------------------------------- --
