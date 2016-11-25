@@ -32,45 +32,45 @@ TYPEDEF  Response
 	
 		-- Ok
 		ResumedOperation				|
-		CashRegisterRestored			|
+		CashRegisterRestored		|
 		CRVariable						|
 		ArtDescription1					|
 		AccountBalance					|
 		ArtDescription2					|
-		Weight							|
+		Weight								|
 		ServiceReady					|
-		ServiceTerminating				|
+		ServiceTerminating			|
 		AccountClosed					|
 		AccountOpened					|
 		ArtRegistered					|
-		AccountIdled					|
-		TransactionSucceeded			|
-		SignedOff						|
-		SignedOn						|
+		AccountIdled						|
+		TransactionSucceeded		|
+		SignedOff							|
+		SignedOn							|
 		DataPrinted						|
-		HTLMText						|
+		HTLMText							|
 		
 		-- Again
 		SigningRejected					|
 		
 		-- Fail
-        UnknownCommand 					|
+        UnknownCommand 			|
 		SyntaxError						|
 		CommandFailed					|
-		ErrorState						|
+		ErrorState							|
 		WeighingNotAvailable			|
 		NoSuchVariable					|	
 		NoSuchArticle					|
 		NoStableWeight					|
 		NoSuchAccount					|
-		InValidAccountState				|
-		NoSuchTransactionMethod			|
-		BusyTransacting					|
+		InValidAccountState			|
+		NoSuchTransactionMethod	|
+		BusyTransacting				|
 		TransactionFailed  				|
 		NotSignedOn						|
 		AuthenticationFailed			|
 		CRPrintingInactive				|
-		SFUPrintingInactive				|
+		SFUPrintingInactive			|
 		Others								
 ENDDEF
 
@@ -100,6 +100,14 @@ FUNCDEF isValidSignOn (c :: Cmd) :: Bool
 ENDDEF
 
 -- ----------------------------------------------------- --
+
+FUNCDEF isInvalidSignOn (c :: Cmd) :: Bool
+	::=
+		(isSignOn(c)) /\ (not(isValidSignOn(c))) /\ (sfu(c) >= 0) /\ (password(c) == "111")
+ENDDEF
+
+-- ----------------------------------------------------- --
+
 FUNCDEF getArtID (a :: Article) :: String
 	::=
 		IF isValid1(a) THEN "59922827" ELSE
@@ -137,42 +145,42 @@ ENDDEF
 FUNCDEF stringToResponse(s :: String) :: Response
 	::=
 		-- Ok
-		IF strinre (s, REGEX('201 .*')) THEN  ResumedOperation 					ELSE
-		IF strinre (s, REGEX('202 .*')) THEN  CashRegisterRestored 				ELSE
-		IF strinre (s, REGEX('210 .*')) THEN  CRVariable 						ELSE
+		IF strinre (s, REGEX('201 .*')) THEN  ResumedOperation 				ELSE
+		IF strinre (s, REGEX('202 .*')) THEN  CashRegisterRestored 			ELSE
+		IF strinre (s, REGEX('210 .*')) THEN  CRVariable 							ELSE
 		IF strinre (s, REGEX('211 .*')) THEN  ArtDescription1 					ELSE
 		IF strinre (s, REGEX('212 .*')) THEN  AccountBalance 					ELSE
 		IF strinre (s, REGEX('213 .*')) THEN  ArtDescription2 					ELSE
-		IF strinre (s, REGEX('214 .*')) THEN  Weight 							ELSE
+		IF strinre (s, REGEX('214 .*')) THEN  Weight 								ELSE
 		IF strinre (s, REGEX('220 .*')) THEN  ServiceReady 						ELSE
 		IF strinre (s, REGEX('221 .*')) THEN  ServiceTerminating 				ELSE
-		IF strinre (s, REGEX('230 .*')) THEN  AccountClosed 					ELSE
+		IF strinre (s, REGEX('230 .*')) THEN  AccountClosed 						ELSE
 		IF strinre (s, REGEX('231 .*')) THEN  AccountOpened 					ELSE
-		IF strinre (s, REGEX('232 .*')) THEN  ArtRegistered 					ELSE
+		IF strinre (s, REGEX('232 .*')) THEN  ArtRegistered 						ELSE
 		IF strinre (s, REGEX('233 .*')) THEN  AccountIdled 						ELSE
-		IF strinre (s, REGEX('240 .*')) THEN  TransactionSucceeded 				ELSE
-		IF strinre (s, REGEX('250 .*')) THEN  SignedOff 						ELSE
+		IF strinre (s, REGEX('240 .*')) THEN  TransactionSucceeded 			ELSE
+		IF strinre (s, REGEX('250 .*')) THEN  SignedOff 							ELSE
 		IF strinre (s, REGEX('251 .*')) THEN  SignedOn 							ELSE
-		IF strinre (s, REGEX('260 .*')) THEN  DataPrinted 						ELSE
+		IF strinre (s, REGEX('260 .*')) THEN  DataPrinted 							ELSE
 		IF strinre (s, REGEX('261 .*')) THEN  HTLMText 							ELSE
 		
 		-- Again
 		IF strinre (s, REGEX('450 .*')) THEN  SigningRejected 					ELSE
 
 		-- Fail
-		IF strinre (s, REGEX('500 .*')) THEN  UnknownCommand					ELSE
+		IF strinre (s, REGEX('500 .*')) THEN  UnknownCommand 				ELSE
 		IF strinre (s, REGEX('501 .*')) THEN  SyntaxError 						ELSE
 		IF strinre (s, REGEX('502 .*')) THEN  CommandFailed 					ELSE
-		IF strinre (s, REGEX('503 .*')) THEN  ErrorState						ELSE
-		IF strinre (s, REGEX('504 .*')) THEN  WeighingNotAvailable 				ELSE
+		IF strinre (s, REGEX('503 .*')) THEN  ErrorState 							ELSE
+		IF strinre (s, REGEX('504 .*')) THEN  WeighingNotAvailable 			ELSE
 		IF strinre (s, REGEX('510 .*')) THEN  NoSuchVariable					ELSE
-		IF strinre (s, REGEX('511 .*')) THEN  NoSuchArticle 					ELSE
+		IF strinre (s, REGEX('511 .*')) THEN  NoSuchArticle 						ELSE
 		IF strinre (s, REGEX('512 .*')) THEN  NoStableWeight					ELSE
 		IF strinre (s, REGEX('530 .*')) THEN  NoSuchAccount						ELSE
 		IF strinre (s, REGEX('531 .*')) THEN  InValidAccountState				ELSE
-		IF strinre (s, REGEX('540 .*')) THEN  NoSuchTransactionMethod			ELSE
+		IF strinre (s, REGEX('540 .*')) THEN  NoSuchTransactionMethod		ELSE
 		IF strinre (s, REGEX('541 .*')) THEN  BusyTransacting 					ELSE
-		IF strinre (s, REGEX('542 .*')) THEN  TransactionFailed 				ELSE
+		IF strinre (s, REGEX('542 .*')) THEN  TransactionFailed 					ELSE
 		IF strinre (s, REGEX('550 .*')) THEN  NotSignedOn 						ELSE
 		IF strinre (s, REGEX('551 .*')) THEN  AuthenticationFailed				ELSE
 		IF strinre (s, REGEX('560 .*')) THEN  CRPrintingInactive 				ELSE
@@ -205,26 +213,26 @@ STAUTDEF scanflowserver [ In :: Cmd; Out :: Response ] ( )
 
         INIT GREETING {}
 		
-        TRANS 	GREETING 		-> Out ? x 																					-> NOT_SIGNED
-				NOT_SIGNED 		-> In ? cmd [[isSignOn(cmd), isValidSignOn(cmd)]] 											-> SIGNING_IN
-				NOT_SIGNED 		-> In ? cmd [[isSignOn(cmd), not(isValidSignOn(cmd)), sfu(cmd) >= 0]] 						-> FAILING_SIGNON
-				FAILING_SIGNON 	-> Out ! AuthenticationFailed 																-> NOT_SIGNED
-				SIGNING_IN 			-> Out ! SignedOn 																		-> AS_IDLE
-				AS_IDLE 				-> In ! Open 																		-> OPENING
-				AS_IDLE 				-> In ! SignOff 																	-> SIGNING_OFF
-				OPENING 				-> Out ! AccountOpened																-> AS_OPEN
+        TRANS 	GREETING 		-> Out ? x 																										-> NOT_SIGNED
+				NOT_SIGNED 		-> In ? cmd [[isSignOn(cmd), isValidSignOn(cmd)]] 												-> SIGNING_IN
+				NOT_SIGNED 		-> In ? cmd [[isInvalidSignOn(cmd)]] 																	-> FAILING_SIGNON
+				FAILING_SIGNON 	-> Out ! AuthenticationFailed 																				-> NOT_SIGNED
+				SIGNING_IN 			-> Out ! SignedOn 																								-> AS_IDLE
+				AS_IDLE 				-> In ! Open 																										-> OPENING
+				AS_IDLE 				-> In ! SignOff 																									-> SIGNING_OFF
+				OPENING 				-> Out ! AccountOpened  																					-> AS_OPEN
 				AS_OPEN 				-> In ? cmd [[isArtreg(cmd), isValidArt(artid(cmd)) , artAmount(cmd) > 0]] 			-> REGISTERING
 				AS_OPEN 				-> In ? cmd [[isArtreg(cmd), not(isValidArt(artid(cmd))), artAmount(cmd) > 0]] 		-> REGISTERING
-				REGISTERING 		-> Out ! NoSuchArticle 																	-> AS_OPEN
-				REGISTERING 		-> Out ! AccountBalance 																-> TOTALING
-				TOTALING 			-> Out ! ArtRegistered 																	-> AS_OPEN
-				AS_OPEN 				-> In ! Close 																		-> CLOSING
-				CLOSING 				-> Out ! AccountClosed 																-> AS_CLOSED
-				AS_CLOSED 			-> In ! Trans("tm_cash") 																-> AS_TRANSING
-				AS_TRANSING 		-> Out ! TransactionSucceeded 															-> AS_ENDING
-				AS_ENDING 			-> In ! Idle 																			-> IDLING
-				IDLING 				-> Out ! AccountIdled 																	-> AS_IDLE
-				SIGNING_OFF 		-> Out ! SignedOff 																		-> NOT_SIGNED
+				REGISTERING 		-> Out ! NoSuchArticle 																						-> AS_OPEN
+				REGISTERING 		-> Out ! AccountBalance 																					-> TOTALING
+				TOTALING 			-> Out ! ArtRegistered 																						-> AS_OPEN
+				AS_OPEN 				-> In ! Close 																									-> CLOSING
+				CLOSING 				-> Out ! AccountClosed 																						-> AS_CLOSED
+				AS_CLOSED 			-> In ! Trans("tm_cash") 																					-> AS_TRANSING
+				AS_TRANSING 		-> Out ! TransactionSucceeded 																			-> AS_ENDING
+				AS_ENDING 			-> In ! Idle 																										-> IDLING
+				IDLING 				-> Out ! AccountIdled 																						-> AS_IDLE
+				SIGNING_OFF 		-> Out ! SignedOff 																							-> NOT_SIGNED
 
 ENDDEF  
 
