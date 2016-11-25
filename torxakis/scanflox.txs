@@ -9,7 +9,7 @@ See license.txt
 CHANDEF  Chans  
     ::=  
         Out :: String;
-        In  :: String
+        In  :: Cmd
 ENDDEF
 
 -- ----------------------------------------------------- --
@@ -19,71 +19,41 @@ TYPEDEF  Cmd
         Signon |
 		Signoff |
 		Open |
-		Artreg {artid :: Int; artamount :: Int} |
+		Artreg {artid :: Article; artamount :: Int} |
 		Close |
 		Trans {method :: String} |
 		Idle
 ENDDEF
 
 -- ----------------------------------------------------- --
-{-
-TYPEDEF  Resp  
-    ::=  
-        success {code :: String} |
-		failure {code :: String}		
+TYPEDEF  Article 
+	::=
+		Valid1    |
+		Valid2    |
+		Valid3    |
+		Invalid1 |
+		Invalid2 
 ENDDEF
+-- ----------------------------------------------------- --
 
--- ----
-PROCDEF open [In :: String; Out :: String] ()
-    ::=
-        In ! "open\n" >-> Out ? x >-> close[In, Out]()
+FUNCDEF isValid (a :: Article) :: Bool
+	::=
+		isValid1(a) -- \/ isValid2(a) \/ isValid3(a)
 ENDDEF
 
 -- ----------------------------------------------------- --
-
-PROCDEF close [In :: String; Out :: String] ()
-    ::=
-        In ! "close\n" >-> Out ? x >-> trans[In, Out]()
+FUNCDEF getArtID (a :: Article) :: String
+	::=
+		IF isValid1(a) THEN "59922827" ELSE
+			IF isValid2(a) THEN "20013226"  ELSE	
+				IF isValid3(a) THEN "59922827" ELSE
+					IF isInvalid1(a) THEN "22"  ELSE "-1"
+					FI
+				FI
+			FI
+		FI
+				
 ENDDEF
-
--- ----------------------------------------------------- --
-
-PROCDEF trans [In :: String; Out :: String] ()
-    ::=
-        In ! "trans tm_cash\n" >-> Out ? x >-> idle[In, Out]()
-ENDDEF
-
--- ----------------------------------------------------- --
-
-PROCDEF idle [In :: String; Out :: String] ()
-    ::=
-        In ! "idle\n" >-> Out ? x >-> yo[In, Out]()
-ENDDEF
-
--- ----------------------------------------------------- --
-
-PROCDEF yo [In :: String; Out :: String] ()
-    ::=
-        get[In, Out]() 
-        ##
-        open[In, Out]()
-        
-ENDDEF
-
--- ----------------------------------------------------- --
-
-PROCDEF get [In :: String; Out :: String] ()
-    ::=
-        In ! "get cs_accnt\n" >-> Out ? x >-> yo[In, Out]()
-ENDDEF
-
--- ----------------------------------------------------- --
-
-PROCDEF signOn [In :: String; Out :: String] ()
-    ::=
-        Out ? x >-> In ! "signon 8:01\n" >-> Out ! "251 Signed On" >-> open[In, Out]()
-ENDDEF
--}
 -- ----------------------------------------------------- --
 
 FUNCDEF cmdToString (c :: Cmd) :: String
@@ -91,43 +61,68 @@ FUNCDEF cmdToString (c :: Cmd) :: String
 		IF isSignon(c) THEN "signon 8:01\n" ELSE
 			IF isSignoff(c) THEN "signoff\n" ELSE
 				IF isOpen(c) THEN "open\n" ELSE
-					IF isArtreg(c) THEN "artreg " ++ toString(artid(c)) ++ ":" ++ toString(artamount(c)) ++ "\n" ELSE
+					IF isArtreg(c) THEN "artreg " ++ getArtID(artid(c)) ++ ":" ++ toString(artamount(c)) ++ "\n" ELSE
 						IF isClose(c) THEN "close\n" ELSE
 							IF isTrans(c) THEN "trans " ++ method(c) ++ "\n" ELSE
 								IF isIdle(c) THEN "idle\n" ELSE ""
+								FI
 							FI
 						FI
 					FI
 				FI
-			FI
-		FI	
-	FI
+			FI	
+		FI
 ENDDEF
 
 -- ----------------------------------------------------- --
 
-STAUTDEF scanflowserver [ In :: String; Out :: String ] ( )
+STAUTDEF check1000 [ Add :: Int; Sum :: Int; Success ] ( start_value :: Int )
+::= 
+		STATE state0, state1
+		VAR sum :: Int
+			INIT state0 { sum := start_value }
+			TRANS state0 -> Add ? x [[ x >= 0 ]] { sum := sum + x } -> state1 
+			state1 -> Sum ! sum [[ sum <= 1000 ]] { } -> state0 
+			state1 -> Success [[ sum >= 1000 ]] { sum := start_value } -> state0
+ENDDEF
+
+STAUTDEF scanflowserver [ In :: Cmd; Out :: String ] ( )
     ::= 
-        STATE GREETING, NOT_SIGNED, SIGNING_IN, AS_IDLE, OPENING, AS_OPEN, REGISTERING, CLOSING, AS_CLOSED, SIGNING_OUT, AS_TRANSING, AS_ENDING, IDLING
+        STATE GREETING, 
+				  NOT_SIGNED, 
+				  SIGNING_IN, 
+				  AS_IDLE, 
+				  OPENING, 
+				  AS_OPEN, 
+				  REGISTERING,
+				  CLOSING, 
+				  AS_CLOSED, 
+				  SIGNING_OUT, 
+				  AS_TRANSING, 
+				  AS_ENDING, 
+				  IDLING,
+				  TOTALING
         
 
         INIT GREETING {}
 		
         TRANS 	GREETING -> Out ? x -> NOT_SIGNED
-				NOT_SIGNED -> In ! cmdToString(Signon) -> SIGNING_IN
+				NOT_SIGNED -> In ! Signon -> SIGNING_IN
 				SIGNING_IN -> Out ? x -> AS_IDLE
-				AS_IDLE -> In ! cmdToString(Open) -> OPENING
+				AS_IDLE -> In ! Open -> OPENING
 				OPENING -> Out ? x -> AS_OPEN
-				AS_OPEN -> In ! cmdToString(Artreg(59922827, 1)) -> REGISTERING
-				REGISTERING -> Out ? x -> AS_OPEN
-				AS_OPEN -> In ! cmdToString(Close) -> CLOSING
+				AS_OPEN -> In ? cmd [[isArtreg(cmd), isValid(artid(cmd)) , artamount(cmd) > 0]]-> REGISTERING
+				REGISTERING -> Out ? x -> TOTALING
+				TOTALING -> Out ? x -> AS_OPEN
+				AS_OPEN -> In ! Close -> CLOSING
 				CLOSING -> Out ? x -> AS_CLOSED
+				AS_CLOSED -> In ! Trans("tm_cash") -> AS_TRANSING
+				AS_TRANSING -> Out ? x -> AS_ENDING
+				AS_ENDING -> In ! Idle -> IDLING
+				IDLING -> Out ? x -> AS_IDLE
 				
 				
-				
-				--SIGNING_IN -> Out ? Success :: Resp -> AS_IDLE
-				
-                
+
 ENDDEF  
 
 -- ----------------------------------------------------- --
@@ -148,7 +143,7 @@ CNECTDEF  Sut
      CLIENTSOCK
 
      CHAN OUT  In          HOST "sid.cs.ru.nl"  PORT 25999
-     ENCODE    In ? cmd      ->  !  cmd
+     ENCODE    In ? cmd      ->  !  cmdToString(cmd)
 
      CHAN IN   Out          HOST "sid.cs.ru.nl"  PORT 25999
      DECODE   Out ! s   <-   ? s
