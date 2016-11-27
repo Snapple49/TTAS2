@@ -338,9 +338,11 @@ ENDDEF
 
 PROCDEF  Acc_Opened  [ Cmd :: Command;  Resp :: Response ] ( )
     ::=
-			(Cmd ? cmd [[isArtreg(cmd), isValidArt(article(cmd)) , artAmount(cmd) > 0]] >-> Resp ! AccountBalance >-> Resp ! ArtRegistered    >-> Acc_Opened[Cmd, Resp]()
+			Cmd ? cmd [[isArtreg(cmd), artAmount(cmd) <= 0]] >-> Resp ! SyntaxError  >-> Acc_Opened[Cmd, Resp]()
 			##
-			Cmd ? cmd [[isArtreg(cmd), not(isValidArt(article(cmd))), artAmount(cmd) > 0]] >-> Resp ! NoSuchArticle >-> Acc_Opened[Cmd, Resp]())
+			Cmd ? cmd [[isArtreg(cmd), isValidArt(article(cmd)) , artAmount(cmd) > 0]] >-> Resp ! AccountBalance >-> Resp ! ArtRegistered    >-> Acc_Opened[Cmd, Resp]()
+			##
+			Cmd ? cmd [[isArtreg(cmd), not(isValidArt(article(cmd))), artAmount(cmd) > 0]] >-> Resp ! NoSuchArticle >-> Acc_Opened[Cmd, Resp]()
 			##
 			Cmd ! Close >-> Resp ! AccountClosed >-> Acc_Closed[Cmd, Resp]()
 			## 
@@ -391,15 +393,15 @@ ENDDEF
 
 PROCDEF  Go_Back_To [ Cmd :: Command;  Resp :: Response ] (s :: State)
     ::=
-		[[isS_Not_Signed(s)]] =>> Not_Signed[Cmd, Resp](s)
-		##
-		 [[isS_As_Idle(s)]] =>> Acc_Idle[Cmd, Resp]()
-		##
-		[[isS_As_Opened(s)]] =>> Acc_Opened[Cmd, Resp]()
-		##
-		 [[isS_As_Closed(s)]] =>> Acc_Closed[Cmd, Resp]()
-		##
-		 [[isS_As_Ending(s)]] =>> Acc_Ending[Cmd, Resp]()
+			[[isS_Not_Signed(s)]] =>> Not_Signed[Cmd, Resp](s)
+			##
+			[[isS_As_Idle(s)]] =>> Acc_Idle[Cmd, Resp]()
+			##
+			[[isS_As_Opened(s)]] =>> Acc_Opened[Cmd, Resp]()
+			##
+			[[isS_As_Closed(s)]] =>> Acc_Closed[Cmd, Resp]()
+			##
+			[[isS_As_Ending(s)]] =>> Acc_Ending[Cmd, Resp]()
 	
 ENDDEF
 
