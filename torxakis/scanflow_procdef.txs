@@ -17,13 +17,14 @@ ENDDEF
 TYPEDEF  Command  
     ::=  
         SignOn 		{sfu :: Int; password :: String}		|
-		SignOff |
-		Open |
-		Artreg {artid :: Article; artAmount :: Int} |
-		Close |
-		Trans {method :: String} |
-		Idle	|
-		GetVar {variable :: CRVar}
+		SignOff 														|
+		Open 															|
+		Artreg {article :: Article; artAmount :: Int} 		|
+		Close 															|
+		Trans {method :: String} 								|
+		Idle																|
+		GetVar {variable :: CRVar} 							|
+		Artid {art :: Article}
 ENDDEF
 
 -- ----------------------------------------------------- --
@@ -195,11 +196,13 @@ FUNCDEF cmdToString (c :: Command) :: String
 		IF isSignOn(c) THEN "signon " ++ toString(sfu(c)) ++ ":"  ++ password(c) ++ "\n" ELSE
 			IF isSignOff(c) THEN "signoff\n" ELSE
 				IF isOpen(c) THEN "open\n" ELSE
-					IF isArtreg(c) THEN "artreg " ++ getArtID(artid(c)) ++ ":" ++ toString(artAmount(c)) ++ "\n" ELSE
+					IF isArtreg(c) THEN "artreg " ++ getArtID(article(c)) ++ ":" ++ toString(artAmount(c)) ++ "\n" ELSE
 						IF isClose(c) THEN "close\n" ELSE
 							IF isTrans(c) THEN "trans " ++ method(c) ++ "\n" ELSE
 								IF isGetVar(c) THEN "get " ++ crVarToString(variable(c)) ++ "\n" ELSE
-									IF isIdle(c) THEN "idle\n" ELSE ""
+									IF isArtid(c) THEN "artid " ++ getArtID(art(c)) ++ "\n" ELSE
+										IF isIdle(c) THEN "idle\n" ELSE ""
+										FI
 									FI
 								FI
 							FI
@@ -300,19 +303,21 @@ ENDDEF
 
 PROCDEF  Not_Signed  [ Cmd :: Command;  Resp :: Response ] ( s :: State)
     ::=
-			Cmd ? cmd [[isSignOn(cmd), isValidSignOn(cmd), isS_Not_Signed(s)]]  >-> Resp ! SignedOn >-> Acc_Idle[Cmd, Resp]()
+			Cmd ? cmd [[isValidSignOn(cmd), isS_Not_Signed(s)]]  >-> Resp ! SignedOn >-> Acc_Idle[Cmd, Resp]()
 			##
-			Cmd ? cmd [[isSignOn(cmd), isValidSignOn(cmd), isS_As_Idle(s)]]  >-> Resp ! SignedOn >-> Acc_Idle[Cmd, Resp]()
+			Cmd ? cmd [[isValidSignOn(cmd), isS_As_Idle(s)]]  >-> Resp ! SignedOn >-> Acc_Idle[Cmd, Resp]()
 			##
-			Cmd ? cmd [[isSignOn(cmd), isValidSignOn(cmd), isS_As_Opened(s)]]  >-> Resp ! SignedOn >-> Acc_Opened[Cmd, Resp]()
+			Cmd ? cmd [[isValidSignOn(cmd), isS_As_Opened(s)]]  >-> Resp ! SignedOn >-> Acc_Opened[Cmd, Resp]()
 			##
-			Cmd ? cmd [[isSignOn(cmd), isValidSignOn(cmd), isS_As_Closed(s)]]  >-> Resp ! SignedOn >-> Acc_Closed[Cmd, Resp]()
+			Cmd ? cmd [[isValidSignOn(cmd), isS_As_Closed(s)]]  >-> Resp ! SignedOn >-> Acc_Closed[Cmd, Resp]()
 			##
-			Cmd ? cmd [[isSignOn(cmd), isValidSignOn(cmd), isS_As_Ending(s)]]  >-> Resp ! SignedOn >-> Acc_Ending[Cmd, Resp]()
+			Cmd ? cmd [[isValidSignOn(cmd), isS_As_Ending(s)]]  >-> Resp ! SignedOn >-> Acc_Ending[Cmd, Resp]()
 			##
 			Cmd ? cmd [[isInvalidSignOn(cmd)]]  >-> Resp ! AuthenticationFailed >-> Not_Signed[Cmd, Resp](s)
 			##
 			Cmd ! SignOff >-> Resp ! NotSignedOn >-> Not_Signed[Cmd, Resp](s)
+			##
+			Cmd ? cmd [[isArtid(cmd)]] >-> Resp ! NotSignedOn >-> Not_Signed[Cmd, Resp](s)
 ENDDEF
 
 -- ----------------------------------------------------- --
@@ -324,21 +329,26 @@ PROCDEF  Acc_Idle  [ Cmd :: Command;  Resp :: Response ] ( )
 			Get_Var[Cmd, Resp] (S_As_Idle)
 			##
 			Cmd ! SignOff >-> Resp ! SignedOff >-> Not_Signed[Cmd, Resp](S_As_Idle)
+			## 
+			Art_Id[Cmd, Resp](S_As_Idle)
+
 ENDDEF
 
 -- ----------------------------------------------------- --
 
 PROCDEF  Acc_Opened  [ Cmd :: Command;  Resp :: Response ] ( )
     ::=
-			(Cmd ? cmd [[isArtreg(cmd), isValidArt(artid(cmd)) , artAmount(cmd) > 0]] >-> Resp ! AccountBalance >-> Resp ! ArtRegistered    >-> Acc_Opened[Cmd, Resp]()
+			(Cmd ? cmd [[isArtreg(cmd), isValidArt(article(cmd)) , artAmount(cmd) > 0]] >-> Resp ! AccountBalance >-> Resp ! ArtRegistered    >-> Acc_Opened[Cmd, Resp]()
 			##
-			Cmd ? cmd [[isArtreg(cmd), not(isValidArt(artid(cmd))), artAmount(cmd) > 0]] >-> Resp ! NoSuchArticle >-> Acc_Opened[Cmd, Resp]())
+			Cmd ? cmd [[isArtreg(cmd), not(isValidArt(article(cmd))), artAmount(cmd) > 0]] >-> Resp ! NoSuchArticle >-> Acc_Opened[Cmd, Resp]())
 			##
 			Cmd ! Close >-> Resp ! AccountClosed >-> Acc_Closed[Cmd, Resp]()
 			## 
 			Get_Var[Cmd, Resp] (S_As_Opened)
 			##
 			Cmd ! SignOff >-> Resp ! SignedOff >-> Not_Signed[Cmd, Resp](S_As_Opened)
+			## 
+			Art_Id[Cmd, Resp](S_As_Opened)
 ENDDEF
 
 -- ----------------------------------------------------- --
@@ -350,6 +360,8 @@ PROCDEF  Acc_Closed  [ Cmd :: Command;  Resp :: Response ] ( )
 			Get_Var[Cmd, Resp] (S_As_Closed)
 			##
 			Cmd ! SignOff >-> Resp ! SignedOff >-> Not_Signed[Cmd, Resp](S_As_Closed)
+			## 
+			Art_Id[Cmd, Resp](S_As_Closed)
 ENDDEF
 
 -- ----------------------------------------------------- --
@@ -361,31 +373,43 @@ PROCDEF  Acc_Ending  [ Cmd :: Command;  Resp :: Response ] ( )
 			Get_Var[Cmd, Resp] (S_As_Ending)
 			##
 			Cmd ! SignOff >-> Resp ! SignedOff >-> Not_Signed[Cmd, Resp](S_As_Ending)
+			## 
+			Art_Id[Cmd, Resp](S_As_Ending)
+ENDDEF
+
+-- ----------------------------------------------------- --
+
+PROCDEF  Art_Id [ Cmd :: Command;  Resp :: Response ] (s :: State)
+    ::=
+			Cmd ? cmd [[isArtid(cmd), isValidArt(art(cmd))]] >-> Resp ! ArtDescription2 >-> Go_Back_To[Cmd, Resp](s)
+			##
+			Cmd ? cmd [[isArtid(cmd), not(isValidArt(art(cmd)))]] >-> Resp ! NoSuchArticle >-> Go_Back_To[Cmd, Resp](s)
+ENDDEF
+
+
+-- ----------------------------------------------------- --
+
+PROCDEF  Go_Back_To [ Cmd :: Command;  Resp :: Response ] (s :: State)
+    ::=
+		[[isS_Not_Signed(s)]] =>> Not_Signed[Cmd, Resp](s)
+		##
+		 [[isS_As_Idle(s)]] =>> Acc_Idle[Cmd, Resp]()
+		##
+		[[isS_As_Opened(s)]] =>> Acc_Opened[Cmd, Resp]()
+		##
+		 [[isS_As_Closed(s)]] =>> Acc_Closed[Cmd, Resp]()
+		##
+		 [[isS_As_Ending(s)]] =>> Acc_Ending[Cmd, Resp]()
+	
 ENDDEF
 
 -- ----------------------------------------------------- --
 
 PROCDEF  Get_Var [ Cmd :: Command;  Resp :: Response ] (s :: State)
     ::=
-			Cmd ? cmd [[isGetVar(cmd), isValidVariable(variable(cmd)), isS_Not_Signed(s)]] >-> Resp ! CRVariable  >-> Not_Signed[Cmd, Resp](S_Not_Signed)
+			Cmd ? cmd [[isGetVar(cmd), isValidVariable(variable(cmd))]] >-> Resp ! CRVariable  >-> Go_Back_To[Cmd, Resp](s)
 			##
-			Cmd ? cmd [[isGetVar(cmd), isValidVariable(variable(cmd)), isS_As_Idle(s)]] >-> Resp ! CRVariable  >-> Acc_Idle[Cmd, Resp]()
-			##
-			Cmd ? cmd [[isGetVar(cmd), isValidVariable(variable(cmd)), isS_As_Opened(s)]] >-> Resp ! CRVariable  >-> Acc_Opened[Cmd, Resp]()
-			##
-			Cmd ? cmd [[isGetVar(cmd), isValidVariable(variable(cmd)), isS_As_Closed(s)]] >-> Resp ! CRVariable  >-> Acc_Closed[Cmd, Resp]()
-			##
-			Cmd ? cmd [[isGetVar(cmd), isValidVariable(variable(cmd)), isS_As_Ending(s)]] >-> Resp ! CRVariable  >-> Acc_Ending[Cmd, Resp]()
-			##
-			Cmd ? cmd [[isGetVar(cmd), not(isValidVariable(variable(cmd))), isS_Not_Signed(s)]] >-> Resp ! NoSuchVariable  >-> Not_Signed[Cmd, Resp](S_Not_Signed)
-			##
-			Cmd ? cmd [[isGetVar(cmd), not(isValidVariable(variable(cmd))), isS_As_Idle(s)]] >-> Resp ! NoSuchVariable  >-> Acc_Idle[Cmd, Resp]()
-			##
-			Cmd ? cmd [[isGetVar(cmd), not(isValidVariable(variable(cmd))), isS_As_Opened(s)]] >-> Resp ! NoSuchVariable  >-> Acc_Opened[Cmd, Resp]()
-			##
-			Cmd ? cmd [[isGetVar(cmd), not(isValidVariable(variable(cmd))), isS_As_Closed(s)]] >-> Resp ! NoSuchVariable  >-> Acc_Closed[Cmd, Resp]()
-			##
-			Cmd ? cmd [[isGetVar(cmd), not(isValidVariable(variable(cmd))), isS_As_Ending(s)]] >-> Resp ! NoSuchVariable  >-> Acc_Ending[Cmd, Resp]()
+			Cmd ? cmd [[isGetVar(cmd),  not(isValidVariable(variable(cmd)))]] >-> Resp ! NoSuchVariable  >-> Go_Back_To[Cmd, Resp](s)
 ENDDEF
 
 -- ----------------------------------------------------- --
