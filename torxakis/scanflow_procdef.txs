@@ -17,12 +17,12 @@ ENDDEF
 TYPEDEF  Command  
     ::=  
         SignOn 		{sfu :: Int; password :: String}		|
-		SignOff 														|
-		Open 															|
+		SignOff 											|
+		Open 												|
 		Artreg {article :: Article; artAmount :: Int} 		|
-		Close 															|
-		Trans {method :: String} 								|
-		Idle																|
+		Close 												|
+		Trans {method :: String} 							|
+		Idle												|
 		GetVar {variable :: CRVar} 							|
 		Artid {art :: Article}
 ENDDEF
@@ -34,45 +34,45 @@ TYPEDEF  Response
 	
 		-- Ok
 		ResumedOperation				|
-		CashRegisterRestored		|
+		CashRegisterRestored			|
 		CRVariable						|
 		ArtDescription1					|
 		AccountBalance					|
 		ArtDescription2					|
-		Weight								|
+		Weight							|
 		ServiceReady					|
-		ServiceTerminating			|
+		ServiceTerminating				|
 		AccountClosed					|
 		AccountOpened					|
 		ArtRegistered					|
-		AccountIdled						|
-		TransactionSucceeded		|
-		SignedOff							|
-		SignedOn							|
+		AccountIdled					|
+		TransactionSucceeded			|
+		SignedOff						|
+		SignedOn						|
 		DataPrinted						|
-		HTLMText							|
+		HTLMText						|
 		
 		-- Again
 		SigningRejected					|
 		
 		-- Fail
-        UnknownCommand 			|
+        UnknownCommand 					|
 		SyntaxError						|
 		CommandFailed					|
-		ErrorState							|
+		ErrorState						|
 		WeighingNotAvailable			|
 		NoSuchVariable					|	
 		NoSuchArticle					|
 		NoStableWeight					|
 		NoSuchAccount					|
-		InValidAccountState			|
-		NoSuchTransactionMethod	|
-		BusyTransacting				|
+		InValidAccountState				|
+		NoSuchTransactionMethod			|
+		BusyTransacting					|
 		TransactionFailed  				|
 		NotSignedOn						|
 		AuthenticationFailed			|
 		CRPrintingInactive				|
-		SFUPrintingInactive			|
+		SFUPrintingInactive				|
 		Others								
 ENDDEF
 
@@ -81,8 +81,8 @@ ENDDEF
 TYPEDEF  State 
 	::=
 		S_Not_Signed    |
-		S_As_Idle    		|
-		S_As_Opened    |
+		S_As_Idle    	|
+		S_As_Opened    	|
 		S_As_Closed 	|
 		S_As_Ending 
 ENDDEF
@@ -91,28 +91,28 @@ ENDDEF
 
 TYPEDEF  CRVar
 	::=
-		SI_MODEL			|
-		SI_SOFTW			|
+		SI_MODEL		|
+		SI_SOFTW		|
 		SI_SCRP			|
-		SI_SYSID			|
-		LC_CNTRY			|
+		SI_SYSID		|
+		LC_CNTRY		|
 		LC_CURCY		|
-		LC_SEPCH			|
-		LC_FRACT			|
+		LC_SEPCH		|
+		LC_FRACT		|
 		LC_WEIGHT		|
 		TC_BANK			|
 		TC_BANK2		|
 		TC_CASH			|
 		TC_STORE		|
-		TC_FLUSH			|
-		PC_CR				|
-		PC_SFU				|
+		TC_FLUSH		|
+		PC_CR			|
+		PC_SFU			|
 		MS_SRBC			|
 		MS_BCPFX		|
-		CS_EVENT			|
+		CS_EVENT		|
 		CS_SIGN			|
 		CS_ACCNT		|
-		AI_STAMP			|
+		AI_STAMP		|
 		Invalid
 ENDDEF
 
@@ -123,7 +123,7 @@ TYPEDEF  Article
 		Valid1    |
 		Valid2    |
 		Valid3    |
-		Invalid1 |
+		Invalid1  |
 		Invalid2 
 ENDDEF
 
@@ -139,7 +139,7 @@ FUNCDEF isValidVariable (v :: CRVar) :: Bool
 		isLC_CURCY(v) 		\/
 		isLC_SEPCH(v) 		\/
 		isLC_FRACT(v) 		\/
-		isLC_WEIGHT(v)	\/
+		isLC_WEIGHT(v)		\/
 		isTC_BANK(v) 		\/
 		isTC_BANK2(v) 		\/
 		isTC_CASH(v) 		\/
@@ -151,7 +151,7 @@ FUNCDEF isValidVariable (v :: CRVar) :: Bool
 		isMS_BCPFX(v) 		\/
 		isCS_EVENT(v) 		\/
 		isCS_SIGN(v) 		\/
-		isCS_ACCNT(v) 	\/
+		isCS_ACCNT(v) 		\/
 		isAI_STAMP(v) 
 		
 ENDDEF
@@ -248,42 +248,42 @@ ENDDEF
 FUNCDEF stringToResponse(s :: String) :: Response
 	::=
 		-- Ok
-		IF strinre (s, REGEX('201 .*')) THEN  ResumedOperation 				ELSE
-		IF strinre (s, REGEX('202 .*')) THEN  CashRegisterRestored 			ELSE
-		IF strinre (s, REGEX('210 .*')) THEN  CRVariable 							ELSE
+		IF strinre (s, REGEX('201 .*')) THEN  ResumedOperation 					ELSE
+		IF strinre (s, REGEX('202 .*')) THEN  CashRegisterRestored 				ELSE
+		IF strinre (s, REGEX('210 .*')) THEN  CRVariable 						ELSE
 		IF strinre (s, REGEX('211 .*')) THEN  ArtDescription1 					ELSE
 		IF strinre (s, REGEX('212 .*')) THEN  AccountBalance 					ELSE
 		IF strinre (s, REGEX('213 .*')) THEN  ArtDescription2 					ELSE
-		IF strinre (s, REGEX('214 .*')) THEN  Weight 								ELSE
+		IF strinre (s, REGEX('214 .*')) THEN  Weight 							ELSE
 		IF strinre (s, REGEX('220 .*')) THEN  ServiceReady 						ELSE
 		IF strinre (s, REGEX('221 .*')) THEN  ServiceTerminating 				ELSE
-		IF strinre (s, REGEX('230 .*')) THEN  AccountClosed 						ELSE
+		IF strinre (s, REGEX('230 .*')) THEN  AccountClosed 					ELSE
 		IF strinre (s, REGEX('231 .*')) THEN  AccountOpened 					ELSE
-		IF strinre (s, REGEX('232 .*')) THEN  ArtRegistered 						ELSE
+		IF strinre (s, REGEX('232 .*')) THEN  ArtRegistered 					ELSE
 		IF strinre (s, REGEX('233 .*')) THEN  AccountIdled 						ELSE
-		IF strinre (s, REGEX('240 .*')) THEN  TransactionSucceeded 			ELSE
-		IF strinre (s, REGEX('250 .*')) THEN  SignedOff 							ELSE
+		IF strinre (s, REGEX('240 .*')) THEN  TransactionSucceeded 				ELSE
+		IF strinre (s, REGEX('250 .*')) THEN  SignedOff 						ELSE
 		IF strinre (s, REGEX('251 .*')) THEN  SignedOn 							ELSE
-		IF strinre (s, REGEX('260 .*')) THEN  DataPrinted 							ELSE
+		IF strinre (s, REGEX('260 .*')) THEN  DataPrinted 						ELSE
 		IF strinre (s, REGEX('261 .*')) THEN  HTLMText 							ELSE
 		
 		-- Again
 		IF strinre (s, REGEX('450 .*')) THEN  SigningRejected 					ELSE
 
 		-- Fail
-		IF strinre (s, REGEX('500 .*')) THEN  UnknownCommand 				ELSE
+		IF strinre (s, REGEX('500 .*')) THEN  UnknownCommand 					ELSE
 		IF strinre (s, REGEX('501 .*')) THEN  SyntaxError 						ELSE
 		IF strinre (s, REGEX('502 .*')) THEN  CommandFailed 					ELSE
-		IF strinre (s, REGEX('503 .*')) THEN  ErrorState 							ELSE
-		IF strinre (s, REGEX('504 .*')) THEN  WeighingNotAvailable 			ELSE
+		IF strinre (s, REGEX('503 .*')) THEN  ErrorState 						ELSE
+		IF strinre (s, REGEX('504 .*')) THEN  WeighingNotAvailable 				ELSE
 		IF strinre (s, REGEX('510 .*')) THEN  NoSuchVariable					ELSE
-		IF strinre (s, REGEX('511 .*')) THEN  NoSuchArticle 						ELSE
+		IF strinre (s, REGEX('511 .*')) THEN  NoSuchArticle 					ELSE
 		IF strinre (s, REGEX('512 .*')) THEN  NoStableWeight					ELSE
 		IF strinre (s, REGEX('530 .*')) THEN  NoSuchAccount						ELSE
 		IF strinre (s, REGEX('531 .*')) THEN  InValidAccountState				ELSE
-		IF strinre (s, REGEX('540 .*')) THEN  NoSuchTransactionMethod		ELSE
+		IF strinre (s, REGEX('540 .*')) THEN  NoSuchTransactionMethod			ELSE
 		IF strinre (s, REGEX('541 .*')) THEN  BusyTransacting 					ELSE
-		IF strinre (s, REGEX('542 .*')) THEN  TransactionFailed 					ELSE
+		IF strinre (s, REGEX('542 .*')) THEN  TransactionFailed 				ELSE
 		IF strinre (s, REGEX('550 .*')) THEN  NotSignedOn 						ELSE
 		IF strinre (s, REGEX('551 .*')) THEN  AuthenticationFailed				ELSE
 		IF strinre (s, REGEX('560 .*')) THEN  CRPrintingInactive 				ELSE
@@ -301,7 +301,7 @@ ENDDEF
 
 -- ----------------------------------------------------- --
 
-PROCDEF  Not_Signed  [ Cmd :: Command;  Resp :: Response ] ( s :: State)
+PROCDEF  Not_Signed  [ Cmd :: Command;  Resp :: Response ] (s :: State)
     ::=
 			Cmd ? cmd [[isValidSignOn(cmd), isS_Not_Signed(s)]]  >-> Resp ! SignedOn >-> Acc_Idle[Cmd, Resp]()
 			##
